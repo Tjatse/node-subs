@@ -1,0 +1,36 @@
+{
+  "name": "node-subs",
+  "version": "0.0.1",
+  "description": "Tiny elegant chainable literal substitution.",
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha -R spec -t 5000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Tjatse/node-subs.git"
+  },
+  "keywords": [
+    "substitution",
+    "subs",
+    "template",
+    "environment variable",
+    "variable impaction"
+  ],
+  "author": "Tjatse",
+  "license": "Apache, Version 2.0",
+  "bugs": {
+    "url": "https://github.com/Tjatse/node-subs/issues"
+  },
+  "engines": [
+    "node >= 0.10.0"
+  ],
+  "dependencies": {
+
+  },
+  "devDependencies": {
+    "mocha": "^1.21.4",
+    "chai": "^1.9.1"
+  },
+  "readmeFilename": "README.md"
+}
