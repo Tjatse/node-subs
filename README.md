@@ -1,4 +1,4 @@
-node-subs [![NPM version](https://badge.fury.io/js/node-subs.svg)](http://badge.fury.io/js/node-subs) [![Build Status](https://travis-ci.org/Tjatse/range.svg?branch=master)](https://travis-ci.org/Tjatse/range)
+node-subs [![NPM version](https://badge.fury.io/js/node-subs.svg)](http://badge.fury.io/js/node-subs) [![Build Status](https://travis-ci.org/Tjatse/node-subs.svg?branch=master)](https://travis-ci.org/Tjatse/node-subs)
 =========
 
 Tiny elegant, chainable, fastest literal substitution.
