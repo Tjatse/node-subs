@@ -11,13 +11,6 @@ module.exports = Subs;
  * @constructor
  */
 function Subs(text, data, options){
-  if(arguments.length == 1){
-    // Wrap it as a function if lack of argument.
-    return function(data, options){
-      return Subs(text, data, options);
-    };
-  }
-
   // Extend options by default.
   options = util._extend({
     interpolate: /\$\{([^\{\}]+)\}/g,
@@ -27,48 +20,65 @@ function Subs(text, data, options){
   // Bind default filters.
   util._extend(options.filters, _subsFilters);
 
+  var isString = typeof text == 'string';
   // Indicates whether th text could be substituted.
-  if (!options.interpolate.test(text)) {
+  if (isString && !options.interpolate.test(text)) {
     return text;
   }
 
   // Make it chainable if necessary.
   SubsChainable(options.filters);
 
-  // Begin literal substitution.
-  return text.replace(options.interpolate, function(match, content){
+  var fn = _wrappedText(options, text);
+  if (!data) {
+    // Wrap it as a function if no data is passed in.
+    return fn;
+  }
+
+  return fn(data);
+};
+
+/**
+ * Wrap substituted template.
+ * @param {Object} options
+ * @param {String} text
+ * @returns {string|XML|void}
+ * @private
+ */
+function _wrappedText(options, text){
+  var fn = 'var words="";', offset = 0;
+
+  text.replace(options.interpolate, function(match, content, position){
     // Split variable name and filters.
-    var cts = content.split('|').map(function(c){
+    var ctx = content.split('|').map(function(c){
       return c.trim();
     });
     // If there has no impaction, return it.
-    if (cts.length <= 0) {
-      return '';
+    if (ctx.length == 0) {
+      offset = position + match.length;
+      return;
     }
 
-    // If there has no filter, return it too.
-    if (cts.length == 1) {
-      return data[cts[0]] || '';
+    var _offset = position - offset;
+    if (_offset > 0) {
+      fn += 'words+="' + text.substr(offset, _offset) + '";';
     }
+    offset = position + match.length;
 
-    // Get value.
-    var val = data[cts.shift()] || '';
+    var key = ctx.shift();
 
-    // If there has no filter, return the value.
-    if (cts.length == 0) {
-      return val;
+    if (!ctx.length > 0) {
+      fn += 'words+=data["' + key + '"];';
+    } else {
+      var methods = ctx.join('.');
+      methods.slice(-1) != ')' && (methods += '()');
+      fn += 'words+=sf(data["' + key + '"]).' + methods + '.value;';
     }
-
-    // Chaining filters and wrap them to a Function callback.
-    var funcStr = 'return fn(val).' + cts.join('.');
-    if (!/\)$/.test(funcStr)) {
-      funcStr += '()';
-    }
-
-    // Run filters and return the result.
-    var fn = new Function('val', 'fn', funcStr + '.value');
-    return fn(val, SubsFilter);
   });
+
+  (offset < text.length - 1) && (fn += 'words+="' + text.substr(offset) + '";');
+
+  return new Function('sf', 'data', fn + 'return words;').bind(null, SubsFilter);
 };
 
 /**
@@ -76,7 +86,7 @@ function Subs(text, data, options){
  * @param {Function} fn filter that be provided with a name.
  */
 Subs.extend = function(fn){
-  if(typeof fn != 'function' || !fn.name){
+  if (typeof fn != 'function' || !fn.name) {
     return;
   }
   _subsFilters[fn.name] = fn;
@@ -185,11 +195,11 @@ function SubsFilter(val){
 function SubsChainable(fts){
   var filters = {};
   // Skips defined.
-  for(var k in fts){
+  for (var k in fts) {
     (typeof SubsFilter.prototype[k] == 'undefined') && (filters[k] = fts[k]);
   }
   // Returns if no new filter.
-  if(Object.keys(filters).length == 0){
+  if (Object.keys(filters).length == 0) {
     return;
   }
 
@@ -236,13 +246,10 @@ function SubsChainable(fts){
    * @returns {applyFilter}
    */
   function applyFilter(){
-    var filter = this._filters.shift();
-    // Apply filter if it exists
-    while (filter) {
-      this.value = filters[filter].apply(this, arguments);
-      // Pick next.
-      filter = this._filters.shift();
+    for(var i = 0; i < this._filters.length; i++){
+      this.value = filters[this._filters[i]].apply(this, arguments);
     }
+    this._filters = [];
     return this;
   }
 
