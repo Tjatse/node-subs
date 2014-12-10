@@ -70,8 +70,12 @@ function _wrappedText(options, text){
     if (!ctx.length > 0) {
       fn += 'words+=data["' + key + '"];';
     } else {
-      var methods = ctx.join('.');
-      methods.slice(-1) != ')' && (methods += '()');
+      var methods = ctx.map(function(c){
+        // Backslash-escapes backslash.
+        c = c.replace(/\\/g, '\\\\');
+        return c.slice(-1) != ')' ? c + '()' : c;
+      }).join('.');
+
       fn += 'words+=sf(data["' + key + '"]).' + methods + '.value;';
     }
   });
@@ -86,6 +90,11 @@ function _wrappedText(options, text){
  * @param {Function} fn filter that be provided with a name.
  */
 Subs.extend = function(fn){
+  if(Array.isArray(fn)){
+    return fn.forEach(function(f){
+      Subs.extend(f);
+    });
+  }
   if (typeof fn != 'function' || !fn.name) {
     return;
   }
@@ -184,7 +193,7 @@ function SubsFilter(val){
     return new SubsFilter(val);
   }
   // store value.
-  this.value = val;
+  this.value = val || '';
 };
 
 /**
@@ -198,61 +207,17 @@ function SubsChainable(fts){
   for (var k in fts) {
     (typeof SubsFilter.prototype[k] == 'undefined') && (filters[k] = fts[k]);
   }
+
+  var keys = Object.keys(filters);
   // Returns if no new filter.
-  if (Object.keys(filters).length == 0) {
+  if (keys.length == 0) {
     return;
   }
 
-  /**
-   * In order to make the function / object in a chained mode.
-   * @param {Boolean} store
-   * @returns {{}}
-   */
-  function wrapProtos(store){
-    var ps = {};
-    Object.keys(filters).forEach(function(key){
-      ps[key] = {
-        get: function(){
-          return build(this.value, (store ? this._filters : []).concat(key));
-        }
-      };
-    });
-    return ps;
-  }
-
-  // __proto__
-  var proto = Object.defineProperties(function P(){
-  }, wrapProtos(true));
-
-  /**
-   * Build chain.
-   * @param {String} val
-   * @param {Array} _filters
-   * @returns {Function}
-   */
-  function build(val, _filters){
-    var builder = function(){
-      return applyFilter.apply(builder, arguments);
+  keys.forEach(function(key){
+    SubsFilter.prototype[key] = function(){
+      this.value = filters[key].apply(this, arguments);
+      return this;
     };
-
-    builder.value = val;
-    builder._filters = _filters;
-    builder.__proto__ = proto;
-    return builder;
-  }
-
-  /**
-   * Apply filter.
-   * @returns {applyFilter}
-   */
-  function applyFilter(){
-    for(var i = 0; i < this._filters.length; i++){
-      this.value = filters[this._filters[i]].apply(this, arguments);
-    }
-    this._filters = [];
-    return this;
-  }
-
-  // Bind filters to SubsFilter and finally make them chainable.
-  Object.defineProperties(SubsFilter.prototype, wrapProtos());
+  });
 };
