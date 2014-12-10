@@ -3,6 +3,5 @@ branches:
   only:
     - master
 node_js:
-  - 0.9
   - 0.10
   - 0.11
