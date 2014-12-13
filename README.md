@@ -201,11 +201,11 @@ $ node benchmark/subs-pre.js
 -- Fastest is node-subs
 ```
 
-The benchmarks only test the situations below:
+The benchmarks only test the following situations:
 - Simple template string (few replacements).
 - Big data (over 800bytes, e.g.: `process.env` object).
 
-It's a wheel for environment-variable impaction :p.
+Yah, you gotcha! It's a wheel for environment-variable impaction :p.
 
 **Otherwise, if your template strings are much more complexer and the passing data is smaller enough, try to use `underscore` / `lodash` instead of it.**
 
